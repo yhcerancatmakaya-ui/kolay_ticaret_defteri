@@ -46,8 +46,16 @@ signingConfigs {
     buildTypes {
         release {
             signingConfig = signingConfigs.getByName("release")
-            isMinifyEnabled = false
-            isShrinkResources = false
+            
+            // 🚀 Kod ve kaynak küçültmeyi aktifleştiriyoruz
+            isMinifyEnabled = true
+            isShrinkResources = true
+            
+            // ProGuard kural dosyasını bağlıyoruz
+            proguardFiles(
+                getDefaultProguardFile("proguard-android-optimize.txt"),
+                "proguard-rules.pro"
+            )
         }
     }
 }

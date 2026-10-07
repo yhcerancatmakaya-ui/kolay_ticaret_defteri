@@ -77,6 +77,10 @@ class GoogleDriveServisi {
 
   /// Cihazın gerçek internet bağlantısına sahip olup olmadığını hızlıca kontrol eder (Google sunucusuna ping)
   Future<bool> internetVarMi() async {
+    if (kIsWeb) {
+      // Web üzerinde soket erişimi (InternetAddress) desteklenmez.
+      return true; 
+    }
     try {
       final result = await InternetAddress.lookup('google.com')
           .timeout(const Duration(seconds: 3));
@@ -88,17 +92,18 @@ class GoogleDriveServisi {
 
   /// GoogleSignIn servisini v7+ standartlarında başlatır
   Future<void> _initIfNeeded() async {
-    if (!_initialized) {
-      try {
-        await _googleSignIn.initialize(
-          serverClientId: '635139870431-hcg6f2iafbl127m9ionopbja8niu5i1l.apps.googleusercontent.com',
-        );
-      } catch (e) {
-        debugPrint("GoogleSignIn initialize hatası: $e");
-      }
-      _initialized = true;
+  if (!_initialized) {
+    try {
+      await _googleSignIn.initialize(
+        clientId: '635139870431-hcg6f2iafbl127m9ionopbja8niu5i1l.apps.googleusercontent.com',
+        serverClientId: '635139870431-hcg6f2iafbl127m9ionopbja8niu5i1l.apps.googleusercontent.com',
+      );
+    } catch (e) {
+      debugPrint("GoogleSignIn initialize hatası: $e");
     }
+    _initialized = true;
   }
+}
 
   /// Oturum ve Drive API bağlantısının aktifliğini garantiler (Maksimum 4 saniye timeout)
   Future<bool> _baglantiyiGarantile({bool forceInteractive = false}) async {

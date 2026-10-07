@@ -58,5 +58,5 @@ Bu Gizlilik Politikası zaman zaman güncellenebilir. Güncellemeler bu sayfa ü
 
 Gizlilik politikamız veya uygulamanın kullanımı ile ilgili her türlü soru, görüş ve talepleriniz için bizimle iletişime geçebilirsiniz:
 
-* **E-posta:** (İletişim e-posta adresinizi buraya yazabilirsiniz)
+* **E-posta:** (y.hceran.catmakaya@gmail.com)
 * **GitHub:** [kolay_ticaret_defteri Repository](https://github.com/yhcerancatmakaya-ui/kolay_ticaret_defteri/)

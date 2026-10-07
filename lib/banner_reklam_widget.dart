@@ -25,7 +25,7 @@ class _BannerReklamWidgetState extends State<BannerReklamWidget> {
 
   // Google Play Store Mağaza Linkiniz
   final String _playStoreUrl =
-      "https://play.google.com/store/apps/details?id=com.kotidef.kolayticaretdefteri";
+      "https://play.google.com/store/apps/details?id=com.kotidef.uygulama";
 
   @override
   void initState() {

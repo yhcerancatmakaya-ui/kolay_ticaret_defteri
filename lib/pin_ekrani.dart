@@ -5,6 +5,7 @@
   ========================================================================
 */
 
+import 'package:flutter/foundation.dart'; // 👈 kIsWeb kontrolü için eklendi
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
@@ -18,9 +19,9 @@ import 'yedek_esitleme_servisi.dart';
 
 enum PinEkraniDurumu {
   yukleniyor,
-  ilkKurulum,       // Durum A: Kullanıcı Adı, PIN Oluşturma, Güvenlik Sorusu
-  standartGiris,     // Durum B: Hoş Geldiniz, PIN Tuş Takımı, Alt Linkler
-  sifreSifirlama,   // Durum C: Güvenlik Sorusu ile PIN Sıfırlama
+  ilkKurulum,
+  standartGiris,
+  sifreSifirlama,
 }
 
 class PinEkrani extends StatefulWidget {
@@ -42,26 +43,22 @@ class _PinEkraniState extends State<PinEkrani> with SingleTickerProviderStateMix
   late final GoogleDriveOturumServisi _oturumServisi;
   final YedekEsitlemeServisi _esitlemeServisi = YedekEsitlemeServisi();
   
-  // Controller'lar
   final TextEditingController _kullaniciAdiController = TextEditingController();
   final TextEditingController _cevapController = TextEditingController();
   final TextEditingController _sifirlamaCevapController = TextEditingController();
 
-  // Durum Yönetimi
   PinEkraniDurumu _ekranDurumu = PinEkraniDurumu.yukleniyor;
-  int _kurulumAdimi = 0; // 0: Kullanıcı Adı & Soru, 1: PIN Oluşturma, 2: PIN Onaylama
+  int _kurulumAdimi = 0;
   
   String? _kayitliPin;
   String? _kayitliKullaniciAdi;
   String? _kayitliSoru;
   String? _kayitliCevap;
 
-  // PIN Giriş Bellekleri
   final List<String> _girilenPin = [];
   final List<String> _yeniPin = [];
   final List<String> _yeniPinTekrar = [];
   
-  // Geçici Saklama
   String? _secilenSoru;
   bool _isActionLoading = false;
   bool _isError = false;
@@ -80,7 +77,6 @@ class _PinEkraniState extends State<PinEkrani> with SingleTickerProviderStateMix
   @override
   void initState() {
     super.initState();
-
     _oturumServisi = GoogleDriveOturumServisi(driveServisi: GoogleDriveServisi());
 
     _shakeController = AnimationController(
@@ -96,7 +92,6 @@ class _PinEkraniState extends State<PinEkrani> with SingleTickerProviderStateMix
     ]).animate(_shakeController);
 
     GlobalSessionGuard.isSessionActive = false;
-
     _cihazTaramaVeSorgula();
     
     if (widget.askiyaAlindiMi) {
@@ -115,7 +110,6 @@ class _PinEkraniState extends State<PinEkrani> with SingleTickerProviderStateMix
     super.dispose();
   }
 
-  // --- CİHAZ BİLGİLERİNİ VE KAYITLI VERİLERİ YÜKLEME (Sadece Yerel Veri) ---
   Future<void> _cihazTaramaVeSorgula() async {
     try {
       final String? pin = await _storage.read(key: 'uygulama_pin');
@@ -206,11 +200,10 @@ class _PinEkraniState extends State<PinEkrani> with SingleTickerProviderStateMix
     );
   }
 
-// --- GOOGLE DRIVE OTURUM / KİLİT SORGULAMA VE BULUTTAN OTURUM AÇMA İŞLEMLERİ ---
+  // Web uyumlu Drive Giriş Akışı
   Future<void> _driveHesapSorgulaVeKilitKontrolEt() async {
     setState(() => _isActionLoading = true);
     try {
-      // 1. Google Drive Hesabına Bağlan ve Oturum Kilidini Kontrol Et
       final OturumKilitDurumu durum = await _oturumServisi.oturumKilitDurumuKontrolEt(forceAc: true);
 
       if (!mounted) return;
@@ -218,13 +211,11 @@ class _PinEkraniState extends State<PinEkrani> with SingleTickerProviderStateMix
       if (durum == OturumKilitDurumu.kilitAlindi) {
         await _storage.write(key: 'drive_aktif_mi', value: 'evet');
 
-        // 2. Bulutta Aktif Bir Yedek Dosyası Var mı Kontrol Et, İndir ve Secure Storage Depolarına Uygula
         final bool indirmeBasarili = await _esitlemeServisi.bulutVerisiniYereleVeDepoyaUygula();
 
         if (!mounted) return;
 
         if (indirmeBasarili) {
-          // 3. Buluttan veriler ve güvenli anahtarlar yükledi, yerel kasanın güncel PIN ve Kullanıcı adını oku
           final String? yuklenenPin = await _storage.read(key: 'uygulama_pin');
           final String? yuklenenKullanici = await _storage.read(key: 'kullanici_adi');
           final String? yuklenenSoru = await _storage.read(key: 'guvenlik_sorusu');
@@ -236,7 +227,7 @@ class _PinEkraniState extends State<PinEkrani> with SingleTickerProviderStateMix
               _kayitliKullaniciAdi = yuklenenKullanici;
               _kayitliSoru = yuklenenSoru;
               _kayitliCevap = yuklenenCevap;
-              _ekranDurumu = PinEkraniDurumu.standartGiris; // Doğrudan Şifre/PIN Ekranına Geç
+              _ekranDurumu = PinEkraniDurumu.standartGiris;
             });
             if (!mounted) return;
             ScaffoldMessenger.of(context).showSnackBar(
@@ -255,8 +246,6 @@ class _PinEkraniState extends State<PinEkrani> with SingleTickerProviderStateMix
             );
           }
         } else {
-          // Bulutta yedek yok veya okunamadı
-          if (!mounted) return;
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
               content: Text('Seçilen hesapta herhangi bir kayıt bulunmuyor.'),
@@ -265,7 +254,6 @@ class _PinEkraniState extends State<PinEkrani> with SingleTickerProviderStateMix
           );
         }
       } else if (durum == OturumKilitDurumu.baskaCihazdaAcik) {
-        if (!mounted) return;
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
             content: Text('Bu defter başka bir cihazda aktif durumda. Lütfen diğer cihazdaki oturumu kapatın.'),
@@ -273,7 +261,6 @@ class _PinEkraniState extends State<PinEkrani> with SingleTickerProviderStateMix
           ),
         );
       } else {
-        if (!mounted) return;
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
             content: Text('Google Drive bağlantısı veya oturum kilit kontrolü sağlanamadı.'),
@@ -296,10 +283,9 @@ class _PinEkraniState extends State<PinEkrani> with SingleTickerProviderStateMix
       }
     }
   }
-  
-  // --- TUŞ TAKIMI VE PIN YÖNETİMİ ---
+
   void _standartPinTusaBasildi(String rakam) {
-    HapticFeedback.lightImpact();
+    if (!kIsWeb) HapticFeedback.lightImpact();
     if (_isError) setState(() => _isError = false);
 
     if (_girilenPin.length < 4) {
@@ -310,7 +296,7 @@ class _PinEkraniState extends State<PinEkrani> with SingleTickerProviderStateMix
 
   void _standartPinSil() {
     if (_girilenPin.isNotEmpty) {
-      HapticFeedback.selectionClick();
+      if (!kIsWeb) HapticFeedback.selectionClick();
       setState(() {
         _girilenPin.removeLast();
         _isError = false;
@@ -321,7 +307,7 @@ class _PinEkraniState extends State<PinEkrani> with SingleTickerProviderStateMix
   Future<void> _standartPinKontrolEt() async {
     String birlesikPin = _girilenPin.join();
     if (birlesikPin == _kayitliPin) {
-      HapticFeedback.mediumImpact();
+      if (!kIsWeb) HapticFeedback.mediumImpact();
       setState(() => _isActionLoading = true);
 
       try {
@@ -350,7 +336,7 @@ class _PinEkraniState extends State<PinEkrani> with SingleTickerProviderStateMix
       if (!mounted) return;
       _anaEkranaGec();
     } else {
-      HapticFeedback.vibrate();
+      if (!kIsWeb) HapticFeedback.vibrate();
       setState(() => _isError = true);
       _shakeController.forward(from: 0.0).then((_) {
         if (mounted) setState(() => _girilenPin.clear());
@@ -401,7 +387,7 @@ class _PinEkraniState extends State<PinEkrani> with SingleTickerProviderStateMix
   }
 
   void _kurulumPinTusaBasildi(String rakam) {
-    HapticFeedback.lightImpact();
+    if (!kIsWeb) HapticFeedback.lightImpact();
     if (_kurulumAdimi == 1) {
       if (_yeniPin.length < 4) {
         setState(() => _yeniPin.add(rakam));
@@ -420,7 +406,7 @@ class _PinEkraniState extends State<PinEkrani> with SingleTickerProviderStateMix
   }
 
   void _kurulumPinSil() {
-    HapticFeedback.selectionClick();
+    if (!kIsWeb) HapticFeedback.selectionClick();
     if (_kurulumAdimi == 1 && _yeniPin.isNotEmpty) {
       setState(() => _yeniPin.removeLast());
     } else if (_kurulumAdimi == 2 && _yeniPinTekrar.isNotEmpty) {
@@ -442,7 +428,7 @@ class _PinEkraniState extends State<PinEkrani> with SingleTickerProviderStateMix
       if (!mounted) return;
       _anaEkranaGec();
     } else {
-      HapticFeedback.vibrate();
+      if (!kIsWeb) HapticFeedback.vibrate();
       setState(() {
         _yeniPin.clear();
         _yeniPinTekrar.clear();
@@ -454,7 +440,6 @@ class _PinEkraniState extends State<PinEkrani> with SingleTickerProviderStateMix
     }
   }
 
-  // --- HESABI SIFIRLA VE GÜVENLİK SORGULARI ---
   void _hesabiSifirLaOnayDialog() {
     showDialog(
       context: context,
@@ -545,7 +530,7 @@ class _PinEkraniState extends State<PinEkrani> with SingleTickerProviderStateMix
         );
       }
     } else {
-      HapticFeedback.vibrate();
+      if (!kIsWeb) HapticFeedback.vibrate();
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Güvenlik sorusu cevabı yanlış!'), backgroundColor: AppColors.error),
@@ -554,7 +539,6 @@ class _PinEkraniState extends State<PinEkrani> with SingleTickerProviderStateMix
     }
   }
 
-  // --- ARAYÜZ BİLEŞENLERİ (BUILD) ---
   InputDecoration _inputDekorasyon(String label, IconData icon) {
     return InputDecoration(
       labelText: label,
@@ -585,7 +569,7 @@ class _PinEkraniState extends State<PinEkrani> with SingleTickerProviderStateMix
       canPop: false,
       onPopInvokedWithResult: (didPop, result) {
         if (didPop) return;
-        SystemNavigator.pop();
+        if (!kIsWeb) SystemNavigator.pop();
       },
       child: Scaffold(
         backgroundColor: AppColors.background,
@@ -611,7 +595,6 @@ class _PinEkraniState extends State<PinEkrani> with SingleTickerProviderStateMix
     }
   }
 
-  // --- DURUM A: İLK KURULUM ---
   Widget _durumAIlkKurulumArayuzu() {
     return SingleChildScrollView(
       child: Padding(
@@ -734,7 +717,6 @@ class _PinEkraniState extends State<PinEkrani> with SingleTickerProviderStateMix
     );
   }
 
-  // --- DURUM B: STANDART GİRİŞ ---
   Widget _durumBStandartGirisArayuzu() {
     return Column(
       mainAxisAlignment: MainAxisAlignment.spaceEvenly,
@@ -819,7 +801,6 @@ class _PinEkraniState extends State<PinEkrani> with SingleTickerProviderStateMix
     );
   }
 
-  // --- DURUM C: ŞİFRE SIFIRLAMA ---
   Widget _durumCSifreSifirlamaArayuzu() {
     return Padding(
       padding: const EdgeInsets.all(24.0),
@@ -895,7 +876,6 @@ class _PinEkraniState extends State<PinEkrani> with SingleTickerProviderStateMix
     );
   }
 
-  // --- KLAVYE BİLEŞENİ ---
   Widget _daireselKlavyeGoster(
     Function(String) onRakam,
     VoidCallback onSil,
